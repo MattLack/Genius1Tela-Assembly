@@ -1,0 +1,294 @@
+#########################################################################
+#  																		#
+#																		#
+# Alunos:  Jonatan Washington, Marcos Eduardo ,Renilson Albuquerque		#
+#			Anderson Mateus												#
+#																		#
+#	Bitmap Display:														#
+#	Unit Width/Height pixel = 32x32										#
+#	Display Width/Height pixel = 256x256								#
+#	Base address for display = heap (0x10040000)						#
+#																		#
+#########################################################################
+
+
+
+.data
+
+	corAzul: .word 0x000000FF #Do padrao RGB os 2bytes do azul estao totalmente ativados 
+	corAmarelo: .word 0x00FFFF00
+	corVermelho: .word 0x00FF0000
+	corVerde: .word 0x0000FF00
+	finalTela:  .word 0x10040100
+	inicioTela: .word 0x10040000
+	preto:		.word 0x00000000 #preto
+	msg:		.asciiz "Digite uma cor: \n(0 - Verde)\n(1 - Amarelo)\n(2 - Vermelho)\n(3 - Azul)"
+	victory:	.asciiz "Você Venceu!"
+	loser:		.asciiz "Você Perdeu #noob"
+	
+	
+.macro preencheCor(%cor)
+		lw $t2, inicioTela
+		lw $t3, finalTela
+	
+		iniciolaco: 
+			beq $t3, $t2, fimlaco
+			sw  %cor, 0($t2) 
+			addi $t4, $t4, 4 
+			addi $t2, $t2, 4 		
+			j iniciolaco 
+		fimlaco:
+		
+		delay()
+		
+.end_macro
+
+
+.macro random()
+		li $a1, 4 
+		li $v0, 42 
+		addi $t7, $zero, 20 
+		add $t0, $zero, $sp 
+		gerador:
+			beq $t7, 0, fimGerador 
+			syscall 
+			sw $a0, 0($t0) 
+			addi $t0, $t0, 4 
+			addi $t7, $t7, -1 
+			j gerador 
+		fimGerador:		
+.end_macro
+
+.macro delay()
+		li $v0, 32
+		li $a0, 350
+		syscall
+.end_macro
+	
+
+.macro corSelecionada(%valor)
+		beq %valor, 0, green
+		beq %valor, 1, yellow
+		beq %valor, 2, red
+		beq %valor, 3, blue
+		beq %valor, 4, black
+		green:
+			lw $k1, corVerde
+			preencheCor($k1)
+			j exit
+		red:
+			lw $k1, corVermelho
+			preencheCor($k1)
+			j exit
+		yellow:
+			lw $k1, corAmarelo
+			preencheCor($k1)
+			j exit
+		blue:
+			lw $k1, corAzul
+			preencheCor($k1)
+			j exit
+		black:
+			lw $k1, preto
+			preencheCor($k1)
+			j exit
+		exit:
+		
+		delay()
+	.end_macro	
+	
+.text
+
+	
+		
+
+main:
+		li $t5, 4
+		
+		random()
+		addi $s0, $zero, 0 #variavel que verifica o andamento do jogo
+		addi $s1, $zero, 0
+		li $s6, 0
+		add $s2, $zero, $sp
+		add $s5, $zero, $sp
+		play:
+			bltz $s0, win 
+			addi $s7, $zero, 1
+			add $s4, $s1, $zero
+			telas:
+					beq $s1, $s7, fimLaco
+					lw $s3, 0($s2)
+					addi $s2, $s2, 4
+					corSelecionada($s3)
+					addi $s1, $s1, 1
+					j telas
+					
+				fimLaco:
+					add $s2, $zero, $sp
+					corSelecionada($t5)
+				laco2:
+					beq $s4, $s7, fimLaco2
+					lw $s3, 0($s5)
+					addi $s5, $s5, 4
+					li $v0, 51
+					la $a0, msg
+					syscall
+					bne $a0, $s3, lose
+					addi $s4, $s4, 1
+					j laco2
+				fimLaco2:
+				add $s6, $s6, 1
+				add $s5, $zero, $sp
+				addi $s7, $s7, 1
+				li $s4, 0
+				add $s1 $zero, $zero
+				beq $s6, 20, win
+				j telas
+			sairTelas:		
+		lose:
+			addi $s7, $zero, 0
+			
+			musicaLose:
+			
+			addi $a0, $zero, 65 # F
+			addi $a1, $zero, 250
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			addi $a0, $zero, 66 # F
+			addi $a1, $zero, 250
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			li $v0, 50
+			la $a0, loser
+			syscall
+		
+		fimMusicaLoser:
+			
+		j fim
+	
+	win:
+		
+		
+		musicaWin:
+		
+		addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+				
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			li $v0, 50
+			la $a0, victory
+			syscall
+			
+			addi $a0, $zero, 62 # F
+			addi $a1, $zero, 400
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 70 # A
+			addi $a1, $zero, 500
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			addi $a0, $zero, 70 # A
+			addi $a1, $zero, 500
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 70 # A
+			addi $a1, $zero, 500
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 70 # A
+			addi $a1, $zero, 500
+			addi $a2, $zero, 0
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			addi $a0, $zero, 62 # D
+			addi $a1, $zero, 500
+			addi $a2, $zero, 24
+			addi $a3, $zero, 127
+			addi $v0, $zero, 33
+			syscall
+			
+			
+		fimMusicaWin:
+			
+			
+
+	fim:								
+												
+													
+	
+		
+
+	
+	
+	
+	
+	
+	
